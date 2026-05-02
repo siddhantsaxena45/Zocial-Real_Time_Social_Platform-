@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { FaHeart, FaComment } from "react-icons/fa";
 import { UserPlus, UserMinus, UserCheck, Network } from "lucide-react"; // Verified dependency
+import axios from "axios";
 import { markAllNotificationsSeen } from "@/redux/rtnSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedPost, setEngagementModalOpen } from "@/redux/postSlice";
@@ -25,9 +26,14 @@ const NotificationPopover = ({ likeNotification = [], children }) => {
 
   return (
     <Popover
-      onOpenChange={(open) => {
+      onOpenChange={async (open) => {
         if (open) {
           dispatch(markAllNotificationsSeen());
+          try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/notification/mark-read`, {}, { withCredentials: true });
+          } catch (error) {
+            console.error("Failed to mark notifications as read", error);
+          }
         }
       }}
     >

@@ -6,6 +6,9 @@ const rtnSlice = createSlice({
     likeNotification: [],
   },
   reducers: {
+    setAllNotifications: (state, action) => {
+      state.likeNotification = action.payload;
+    },
     setLikeNotification: (state, action) => {
       const payload = action.payload;
 
@@ -78,5 +81,5 @@ const rtnSlice = createSlice({
   },
 });
 
-export const { setLikeNotification, markAllNotificationsSeen, markSynergyNotificationsSeen, clearNotifications } = rtnSlice.actions;
+export const { setAllNotifications, setLikeNotification, markAllNotificationsSeen, markSynergyNotificationsSeen, clearNotifications } = rtnSlice.actions;
 export default rtnSlice.reducer;

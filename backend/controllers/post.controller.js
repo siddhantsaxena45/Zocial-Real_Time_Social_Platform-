@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { Post } from "../models/post.model.js";
 import { User } from "../models/user.model.js";
 import { Comment } from "../models/comment.model.js";
+import { Notification } from "../models/notification.model.js";
 import cloudinary from "../utils/cloudinary.js";
 import { getReciverId, io } from "../socket/socket.js";
 import { logEngagement } from "../utils/sql_ledger.js";
@@ -90,6 +91,13 @@ export const likePost = async (req, res) => {
         const user = await User.findById(likekarnewalekiId).select('username profilepicture');
         const postOwnerId = post.author.toString();
         if (postOwnerId !== likekarnewalekiId) {
+            await Notification.create({
+                recipient: postOwnerId,
+                sender: likekarnewalekiId,
+                type: 'like',
+                post: postId,
+                message: `${user.username} liked your post`
+            });
             const notification = {
                 type: 'like',
                 userId: likekarnewalekiId,
@@ -130,6 +138,12 @@ export const dislikePost = async (req, res) => {
         const user = await User.findById(dislikekarnewalekiId).select('username profilepicture');
         const postOwnerId = post.author.toString();
         if (postOwnerId !== dislikekarnewalekiId) {
+            await Notification.deleteOne({
+                recipient: postOwnerId,
+                sender: dislikekarnewalekiId,
+                type: 'like',
+                post: postId
+            });
             const notification = {
                 type: 'dislike',
                 userId: dislikekarnewalekiId,
@@ -172,6 +186,13 @@ export const addComment = async (req, res) => {
             
             // Socket notification
             const user = await User.findById(commentkarnewalekiId).select('username profilepicture');
+            await Notification.create({
+                recipient: postOwnerId,
+                sender: commentkarnewalekiId,
+                type: 'comment',
+                post: postId,
+                message: `${user.username} commented on your post`
+            });
             const notification = {
                 type: 'comment',
                 userId: commentkarnewalekiId,

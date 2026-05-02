@@ -7,6 +7,7 @@ import userRoute from "./routes/user.route.js"
 import postRoute from "./routes/post.route.js"
 import messageRoute from "./routes/message.route.js"
 import analyticsRoute from "./routes/analytics.route.js"
+import notificationRoute from "./routes/notification.route.js"
 import { app, server } from "./socket/socket.js"
 
 dotenv.config({});
@@ -28,6 +29,7 @@ app.use("/api/v1/user", userRoute);
 app.use("/api/v1/post", postRoute);
 app.use("/api/v1/message", messageRoute);
 app.use("/api/v1/analytics", analyticsRoute);
+app.use("/api/v1/notification", notificationRoute);
 
 app.get("/api/v1/ping", (req, res) => {
     res.send("Server is running");

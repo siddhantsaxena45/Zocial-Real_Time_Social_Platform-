@@ -3,6 +3,7 @@ import { User } from "../models/user.model.js";
 import { Message } from "../models/message.model.js";
 import { Post } from "../models/post.model.js";
 import { ConnectionRequest } from "../models/connectionRequest.model.js";
+import { Notification } from "../models/notification.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
@@ -274,7 +275,15 @@ export const followOrUnfollow = async (req, res) => {
             //unfollow
             await Promise.all([
                 User.updateOne({ _id: followkarnewala }, { $pull: { following: jiskofollowkarrhe } }),
-                User.updateOne({ _id: jiskofollowkarrhe }, { $pull: { followers: followkarnewala } })
+                User.updateOne({ _id: jiskofollowkarrhe }, { $pull: { followers: followkarnewala } }),
+                // Fix Connection Logic: Breaking a follow also breaks mutual synergy
+                ConnectionRequest.deleteMany({
+                    $or: [
+                        { sender: followkarnewala, receiver: jiskofollowkarrhe },
+                        { sender: jiskofollowkarrhe, receiver: followkarnewala }
+                    ]
+                }),
+                Notification.deleteOne({ recipient: jiskofollowkarrhe, sender: followkarnewala, type: 'follow' })
             ])
 
              // socket io for unfollow notification
@@ -299,13 +308,21 @@ export const followOrUnfollow = async (req, res) => {
                 User.updateOne({ _id: jiskofollowkarrhe }, { $addToSet: { followers: followkarnewala } })
             ])
 
+             // create DB notification
+             const followerUser = await User.findById(followkarnewala).select('username profilepicture');
+             await Notification.create({
+                 recipient: jiskofollowkarrhe,
+                 sender: followkarnewala,
+                 type: 'follow',
+                 message: `${followerUser.username} followed you`
+             });
+
              // socket io for follow notification
-             const follower = await User.findById(followkarnewala).select('username profilepicture');
              const notification = {
                  type: 'follow',
                  userId: followkarnewala,
-                 userDetails: follower,
-                 message: `${follower.username} followed you`,
+                 userDetails: followerUser,
+                 message: `${followerUser.username} followed you`,
              }
              const targetSocketId = getReciverId(jiskofollowkarrhe);
              if (targetSocketId) {
@@ -491,6 +508,14 @@ export const sendConnectionRequest = async (req, res) => {
 
         // Notify receiver
         const senderUser = await User.findById(sender).select('username profilepicture');
+        
+        await Notification.create({
+            recipient: receiver,
+            sender,
+            type: 'connectionRequest',
+            message: `${senderUser.username} requested profile synergy`
+        });
+
         const notification = {
             type: 'connectionRequest',
             userId: sender,
@@ -525,12 +550,20 @@ export const acceptConnectionRequest = async (req, res) => {
         await Promise.all([
             User.updateOne({ _id: sender }, { $addToSet: { following: receiver, followers: receiver } }),
             User.updateOne({ _id: receiver }, { $addToSet: { following: sender, followers: sender } }),
-            ConnectionRequest.updateOne({ _id: requestId }, { status: "accepted" })
+            ConnectionRequest.updateOne({ _id: requestId }, { status: "accepted" }),
+            Notification.deleteOne({ recipient: receiver, sender: sender, type: 'connectionRequest' })
         ]);
 
         // Fetch fresh populated users to return to acceptor
         const senderUser = await User.findById(sender).select('-password').populate('followers following');
         const receiverUser = await User.findById(receiver).select('-password').populate('followers following');
+
+        await Notification.create({
+            recipient: sender,
+            sender: receiver,
+            type: 'connectionAccepted',
+            message: `${receiverUser.username} accepted your synergy request. Real-time DMs active.`
+        });
 
         // Notify sender as before
         const notification = {
@@ -566,7 +599,10 @@ export const rejectConnectionRequest = async (req, res) => {
             return res.status(404).json({ message: "Synergy request not found or unauthorized", success: false });
         }
 
-        await ConnectionRequest.deleteOne({ _id: requestId });
+        await Promise.all([
+            ConnectionRequest.deleteOne({ _id: requestId }),
+            Notification.deleteOne({ recipient: receiver, sender: request.sender, type: 'connectionRequest' })
+        ]);
 
         return res.status(200).json({ message: "Synergy request declined", success: true });
     } catch (error) {
@@ -622,7 +658,10 @@ export const withdrawConnectionRequest = async (req, res) => {
             return res.status(404).json({ message: "No pending synergy request found to withdraw", success: false });
         }
 
-        await ConnectionRequest.deleteOne({ _id: request._id });
+        await Promise.all([
+            ConnectionRequest.deleteOne({ _id: request._id }),
+            Notification.deleteOne({ recipient: receiver, sender, type: 'connectionRequest' })
+        ]);
 
         // Socket notification for withdrawal
         const receiverSocketId = getReciverId(receiver);
@@ -652,6 +691,12 @@ export const removeSynergy = async (req, res) => {
                 $or: [
                     { sender: userId, receiver: targetId },
                     { sender: targetId, receiver: userId }
+                ]
+            }),
+            Notification.deleteMany({
+                $or: [
+                    { recipient: userId, sender: targetId, type: { $in: ['connectionRequest', 'connectionAccepted'] } },
+                    { recipient: targetId, sender: userId, type: { $in: ['connectionRequest', 'connectionAccepted'] } }
                 ]
             })
         ]);

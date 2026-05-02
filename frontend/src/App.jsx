@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setAuthUser } from "./redux/authSlice";
 import { setSocket } from "./redux/socketSlice"
 import { setOnlineUsers } from "./redux/chatSlice"
-import { setLikeNotification } from "./redux/rtnSlice"
+import { setLikeNotification, setAllNotifications } from "./redux/rtnSlice"
 import { setMessageNotification } from "./redux/messageNotificationSlice";
 import { setIncomingCall, resetCall } from "./redux/callSlice";
 import ProtectedRoutes from "./components/ProtectedRoutes"
@@ -87,7 +87,32 @@ function App() {
         console.error("Failed to refresh auth user:", error);
       }
     };
-    if (user) fetchMe();
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/notification`, { withCredentials: true });
+        if (res.data.success) {
+          // Map backend format to frontend format
+          const formattedNotifications = res.data.notifications.map(notif => ({
+            userId: notif.sender._id,
+            userDetails: notif.sender,
+            type: notif.type,
+            postId: notif.post,
+            message: notif.message,
+            seen: notif.isRead,
+            timestamp: notif.createdAt
+          }));
+          dispatch(setAllNotifications(formattedNotifications));
+        }
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      }
+    };
+
+    if (user) {
+      fetchMe();
+      fetchNotifications();
+    }
   }, [dispatch]);
 
   useEffect(() => {
