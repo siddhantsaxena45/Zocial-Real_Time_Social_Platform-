@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, VideoIcon } from "lucide-react";
+import { ArrowLeft, Loader2, VideoIcon, FileText } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 // import VideoCall from "./VideoCallDialog";
 import { Link } from "react-router-dom";
@@ -110,19 +110,35 @@ const ChatUser = ({ user, isOnline, onBack }) => {
             </div>
           </div>
         </div>
-        {user.isMutual ? (
-            <VideoIcon 
-                onClick={() => window.dispatchEvent(new CustomEvent("initiate-video-call"))}
-                className="w-8 h-8 text-indigo-600 hover:text-indigo-800 cursor-pointer transition-all hover:scale-110 active:scale-90" 
-            />
-        ) : (
-            <div className="opacity-20 cursor-not-allowed group relative">
-                <VideoIcon className="w-8 h-8 text-slate-400" />
-                <div className="absolute -top-8 right-0 bg-slate-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    Mutual Link Required
+        <div className="flex items-center gap-5">
+            {user.isMutual ? (
+                <>
+                <Link to={`/resume/${user._id}`} className="group relative">
+                    <FileText className="w-7 h-7 text-indigo-600 hover:text-indigo-800 cursor-pointer transition-all hover:scale-110 active:scale-90" />
+                    <div className="absolute top-10 right-0 bg-slate-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        View Resume
+                    </div>
+                </Link>
+                <div className="group relative">
+                    <VideoIcon 
+                        onClick={() => window.dispatchEvent(new CustomEvent("initiate-video-call"))}
+                        className="w-8 h-8 text-indigo-600 hover:text-indigo-800 cursor-pointer transition-all hover:scale-110 active:scale-90" 
+                    />
+                    <div className="absolute top-10 right-0 bg-slate-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Video Call
+                    </div>
                 </div>
-            </div>
-        )}
+                </>
+            ) : (
+                <div className="flex items-center gap-5 opacity-20 cursor-not-allowed group relative">
+                    <FileText className="w-7 h-7 text-slate-400" />
+                    <VideoIcon className="w-8 h-8 text-slate-400" />
+                    <div className="absolute top-10 right-0 bg-slate-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                        Mutual Link Required
+                    </div>
+                </div>
+            )}
+        </div>
       </div>
 
       {/* Messages */}
