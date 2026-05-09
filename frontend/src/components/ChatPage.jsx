@@ -75,7 +75,7 @@ const ChatPage = () => {
 
 
   return (
-    <div className="flex h-[calc(100vh-6rem)] lg:h-[calc(100vh-3rem)] w-full overflow-hidden relative bg-white border border-slate-200 shadow-sm rounded-2xl">
+    <div className="flex h-[calc(100dvh-13rem)] lg:h-[calc(100dvh-3rem)] w-full overflow-hidden relative bg-white border border-slate-200 shadow-sm rounded-2xl">
 
       {/* 📱 Mobile Full-Screen Chat */}
       {selectedUser && (
@@ -90,7 +90,7 @@ const ChatPage = () => {
 
       {/* 👈 Left Sidebar (Always visible) */}
       <div className="w-full md:w-80 border-r border-slate-200 bg-white/40 backdrop-blur-3xl shadow-sm flex flex-col">
-        <h1 className="text-lg font-black px-6 py-6 border-b border-slate-100 tracking-tight text-slate-900 uppercase text-[10px] tracking-[0.2em] opacity-60">Intelligence Hub</h1>
+        <h1 className="text-lg font-black px-6 py-6 border-b border-slate-100 text-slate-900 uppercase text-[10px] tracking-[0.2em] opacity-60">Intelligence Hub</h1>
 
 
         <div className="overflow-y-auto flex-1 h-full font-mono bg-slate-50/20">

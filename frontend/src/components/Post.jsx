@@ -28,6 +28,9 @@ const Post = ({ post }) => {
     const [open, setOpen] = useState(false)
     const [openLikes, setOpenLikes] = useState(false)
     const [isCaptionExpanded, setIsCaptionExpanded] = useState(false)
+    const [isEditingCaption, setIsEditingCaption] = useState(false)
+    const [editedCaptionText, setEditedCaptionText] = useState(post.caption || "")
+    const [isSavingCaption, setIsSavingCaption] = useState(false)
     
     // Auto-close overlay dialogs on route navigation
     const location = useLocation();
@@ -65,6 +68,25 @@ const Post = ({ post }) => {
 
         } catch (err) {
             toast.error(err.response.data.message)
+        }
+    }
+
+    const saveCaptionHandler = async () => {
+        try {
+            setIsSavingCaption(true)
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/post/edit/${post._id}`, { caption: editedCaptionText }, { withCredentials: true })
+
+            if (res.data.success) {
+                const updatedPost = res.data.post;
+                const updatedPosts = posts.map(p => p._id === post._id ? { ...p, caption: updatedPost.caption } : p);
+                dispatch(setPosts(updatedPosts));
+                setIsEditingCaption(false);
+                toast.success(res.data.message);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to edit caption");
+        } finally {
+            setIsSavingCaption(false)
         }
     }
     const likeordislike = async (id) => {
@@ -199,10 +221,7 @@ const handleShare = async (imageUrl) => {
                             </Badge>
                         </div>
 
-                        <div className="flex items-center gap-1.5 mt-1">
-                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic opacity-80 leading-none">Network Intelligence Active</span>
-                        </div>
+                       
                     </div>
                 </div>
 
@@ -216,6 +235,13 @@ const handleShare = async (imageUrl) => {
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="flex flex-col items-center p-3 sm:max-w-[240px] border border-white/20 shadow-2xl bg-white/80 backdrop-blur-xl">
+                                <Button 
+                                    variant="ghost" 
+                                    className="w-full justify-center hover:bg-slate-50 font-bold rounded-xl py-6 border-b border-slate-100" 
+                                    onClick={() => { setIsEditingCaption(true); setEditedCaptionText(post.caption || ""); }}
+                                >
+                                    Edit Caption
+                                </Button>
                                 <Button 
                                     variant="ghost" 
                                     className="w-full justify-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 font-bold rounded-xl py-6" 
@@ -320,18 +346,46 @@ const handleShare = async (imageUrl) => {
 
                     <div className='text-sm leading-snug text-slate-700 font-medium'>
                         <span className='font-black mr-2 text-indigo-700'>{post.author?.username}</span>
-                        <span className='opacity-90'>
-                            {isCaptionExpanded || !post.caption || post.caption.length <= 80
-                                ? post.caption
-                                : `${post.caption.slice(0, 80)}...`}
-                        </span>
-                        {post.caption && post.caption.length > 80 && (
-                            <button 
-                                onClick={() => setIsCaptionExpanded(!isCaptionExpanded)}
-                                className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors ml-1"
-                            >
-                                {isCaptionExpanded ? "less" : "more"}
-                            </button>
+                        {isEditingCaption ? (
+                            <div className="mt-2 flex flex-col gap-2 w-full">
+                                <textarea 
+                                    value={editedCaptionText}
+                                    onChange={(e) => setEditedCaptionText(e.target.value)}
+                                    className="w-full bg-white border border-indigo-100 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-indigo-300 resize-none shadow-inner"
+                                    rows={3}
+                                />
+                                <div className="flex items-center gap-2 self-end">
+                                    <button 
+                                        onClick={() => setIsEditingCaption(false)}
+                                        className="text-xs font-bold text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        onClick={saveCaptionHandler}
+                                        disabled={isSavingCaption}
+                                        className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        {isSavingCaption ? "Saving..." : "Save"}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <span className='opacity-90'>
+                                    {isCaptionExpanded || !post.caption || post.caption.length <= 80
+                                        ? post.caption
+                                        : `${post.caption.slice(0, 80)}...`}
+                                </span>
+                                {post.caption && post.caption.length > 80 && (
+                                    <button 
+                                        onClick={() => setIsCaptionExpanded(!isCaptionExpanded)}
+                                        className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors ml-1"
+                                    >
+                                        {isCaptionExpanded ? "less" : "more"}
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
 

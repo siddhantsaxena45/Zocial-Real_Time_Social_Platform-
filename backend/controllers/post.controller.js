@@ -247,6 +247,57 @@ export const deletePost = async (req, res) => {
     }
 }
 
+export const editPostCaption = async (req, res) => {
+    try {
+        const postId = req.params.id;
+        const authorId = req.id;
+        const { caption } = req.body;
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ message: "Post not found", success: false });
+        if (post.author.toString() !== authorId) return res.status(401).json({ message: "You are not authorized to edit this post", success: false });
+
+        post.caption = caption;
+        await post.save();
+        
+        await post.populate({ path: 'author', select: '-password' });
+        await post.populate({ path: 'likes', select: 'username profilepicture' });
+
+        return res.status(200).json({ message: "Post caption updated successfully", success: true, post });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal server error", success: false });
+    }
+}
+
+export const deleteComment = async (req, res) => {
+    try {
+        const commentId = req.params.id;
+        const userId = req.id;
+
+        const comment = await Comment.findById(commentId);
+        if (!comment) return res.status(404).json({ message: "Comment not found", success: false });
+
+        const post = await Post.findById(comment.post);
+        if (!post) return res.status(404).json({ message: "Post not found", success: false });
+
+        // Check authorization: either comment author or post author
+        if (comment.author.toString() !== userId && post.author.toString() !== userId) {
+            return res.status(401).json({ message: "You are not authorized to delete this comment", success: false });
+        }
+
+        await Comment.findByIdAndDelete(commentId);
+        
+        post.comments = post.comments.filter(id => id.toString() !== commentId);
+        await post.save();
+
+        return res.status(200).json({ message: "Comment deleted successfully", success: true, commentId });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal server error", success: false });
+    }
+}
+
 
 export const bookmarkPost = async (req, res) => {
     try {

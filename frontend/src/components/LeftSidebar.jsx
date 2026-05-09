@@ -36,12 +36,12 @@ const LeftSidebar = () => {
   const { messages } = useSelector(state => state.messageNotification);
   const unseenMessagesCount = messages.filter(m => !m.seen).length;
   
-  // Filter notifications for the bell (Strictly only post engagements: like and comment)
-  const bellNotifications = likeNotification.filter(n => ['like', 'comment'].includes(n.type));
+  // Filter notifications for the bell (Post engagements + Connection Acceptances)
+  const bellNotifications = likeNotification.filter(n => ['like', 'comment', 'connectionAccepted'].includes(n.type));
   const unseenNotificationsCount = bellNotifications.filter(n => !n.seen).length;
 
-  // Synergy/Network notifications (include requests, acceptances, and legacy follows)
-  const synergyNotifications = likeNotification.filter(n => ['connectionRequest', 'connectionAccepted', 'follow'].includes(n.type));
+  // Synergy/Network notifications (Strictly incoming requests)
+  const synergyNotifications = likeNotification.filter(n => ['connectionRequest'].includes(n.type));
   const unseenSynergyCount = synergyNotifications.filter(n => !n.seen).length;
 
 

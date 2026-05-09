@@ -4,6 +4,7 @@ import { Message } from "../models/message.model.js";
 import { Post } from "../models/post.model.js";
 import { ConnectionRequest } from "../models/connectionRequest.model.js";
 import { Notification } from "../models/notification.model.js";
+import { Conversation } from "../models/conversation.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
@@ -245,11 +246,23 @@ export const getChatPartners = async (req, res) => {
             following: userId
         }).select('_id username profilepicture bio followers');
 
-        // 🔒 Security Update: STRICT Mutual Follow Enforcement
-        // We only return verified links (Mutual Connections) now.
-        // Direct messages are no longer allowed from anyone who isn't a mutual follower.
+        // Fetch users from past conversations
+        const conversations = await Conversation.find({ participants: userId });
+        const partnerIdsFromConversations = conversations.flatMap(c => c.participants.filter(id => id.toString() !== userId));
+
+        const mutualIds = new Set(mutualConnections.map(u => u._id.toString()));
         
-        const partners = mutualConnections.map(u => ({ ...u.toObject(), isMutual: true }));
+        // Find users from past conversations who aren't in mutualConnections
+        const pastPartnerIds = [...new Set(partnerIdsFromConversations)].filter(id => !mutualIds.has(id.toString()));
+        
+        const pastPartners = await User.find({
+            _id: { $in: pastPartnerIds }
+        }).select('_id username profilepicture bio followers');
+
+        const partners = [
+            ...mutualConnections.map(u => ({ ...u.toObject(), isMutual: true })),
+            ...pastPartners.map(u => ({ ...u.toObject(), isMutual: false }))
+        ];
 
         return res.status(200).json({ users: partners, success: true });
     } catch (error) {

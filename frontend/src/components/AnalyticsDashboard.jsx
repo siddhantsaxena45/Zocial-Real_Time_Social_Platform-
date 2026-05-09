@@ -135,8 +135,8 @@ const AnalyticsDashboard = () => {
                 {[
                     { title: "Influence Score", value: `${data.influence_score}/100`, icon: Award, color: "text-purple-600", bg: "bg-purple-50" },
                     { title: "Engagement EMA", value: data.engagement_density.toFixed(1), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
-                    { title: "Momentum", value: `${data.velocity_momentum > 0 ? '+' : ''}${data.velocity_momentum}%`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
-                    { title: "Discovered Topics", value: skillData.length, icon: Briefcase, color: "text-orange-600", bg: "bg-orange-50" }
+                   //{ title: "Momentum", value: `${data.velocity_momentum > 0 ? '+' : ''}${data.velocity_momentum}%`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50" },
+                    // { title: "Discovered Topics", value: skillData.length, icon: Briefcase, color: "text-orange-600", bg: "bg-orange-50" }
                 ].map((stat, i) => (
                     <Card key={i} className="border-none shadow-lg bg-white/50 backdrop-blur-md overflow-hidden transition-transform hover:scale-[1.02]">
                         <CardContent className="p-6">
@@ -182,6 +182,7 @@ const AnalyticsDashboard = () => {
                 </Card>
 
                 {/* Skill Graph */}
+                {/* Skill Graph */}
                 <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl">
                     <CardHeader>
                         <CardTitle className="text-xl font-bold">Career Focus NLP Mapping</CardTitle>
@@ -190,12 +191,12 @@ const AnalyticsDashboard = () => {
                     <CardContent className="h-[300px]">
                         {skillData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={skillData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis allowDecimals={false} />
+                                <BarChart layout="vertical" data={skillData} margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#eee" />
+                                    <XAxis type="number" allowDecimals={false} />
+                                    <YAxis type="category" dataKey="name" width={80} />
                                     <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                                    <Bar dataKey="value" name="Mentions" radius={[8, 8, 0, 0]}>
+                                    <Bar dataKey="value" name="Mentions" radius={[0, 8, 8, 0]}>
                                         {skillData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}

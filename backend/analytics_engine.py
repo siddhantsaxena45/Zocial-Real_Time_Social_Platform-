@@ -54,7 +54,7 @@ class TextProcessor:
         "then", "than", "will", "can", "could", "would", "should", "here", "there",
         "out", "now", "did", "does", "been", "had", "got", "get", "make", "made",
         "like", "our", "your", "am", "do", "dont", "cant", "didnt", "which", "its",
-        # 🛡️ Quality Control Blacklist (Sentiment/Generic Corporate Noise)
+  
         "proud", "success", "successfully", "happy", "announce", "announcement", "pleased",
         "thrilled", "congratulations", "excellent", "awesome", "amazing", "great", "work",
         "job", "today", "yesterday", "tomorrow", "week", "month", "year", "sharing",
@@ -64,7 +64,6 @@ class TextProcessor:
         "choice", "choosing", "chose", "awesome", "awesome", "cool", "fun", "love", "like"
     ])
 
-    # 💎 The Golden Lexicon: Prioritize these industry-standard keywords
     TECHNICAL_SKILLS = set([
         "python", "javascript", "react", "node", "nodejs", "express", "expressjs",
         "mongodb", "sql", "machine learning", "data science", "java", "cpp", "c++", 
@@ -74,13 +73,18 @@ class TextProcessor:
         "scikit-learn", "flask", "django", "typescript", "html", "css", "nextjs",
         "vue", "angular", "redux", "graphql", "rest", "api", "machine learning",
         "data science", "tailwind css", "next js", "react native", "cloud computing",
-        "artificial intelligence", "deep learning", "software engineering"
+        "artificial intelligence", "deep learning", "software engineering", "go",
+        "golang", "rust", "php", "ruby", "swift", "kotlin", "dart", "flutter",
+        "spring boot", "ruby on rails", "laravel", "mysql", "postgresql", "redis",
+        "elasticsearch", "kafka", "rabbitmq", "microservices", "serverless",
+        "agile", "scrum", "ci/cd", "jenkins", "gitlab", "bitbucket", "linux", "bash"
     ])
 
     @staticmethod
     def clean_text(text):
         text = str(text).lower()
-        text = re.sub(r'[^a-z0-9\s-]', '', text)
+       
+        text = re.sub(r'[^a-z0-9\s]', ' ', text)
         return text
 
     @classmethod
@@ -88,22 +92,18 @@ class TextProcessor:
         words = cls.clean_text(text).split()
         filtered = [w for w in words if w not in cls.STOP_WORDS and len(w) > 2]
         
-        # Simple bigram detection
         bigrams = [" ".join(filtered[i:i+2]) for i in range(len(filtered)-1)]
         
         candidates = filtered + bigrams
         
-        # 🧠 Weighted Scoring System
+       
         scores = defaultdict(float)
         for term in candidates:
-            # Baseline frequency
-            scores[term] += 1.0
-            
-            # Whitelist Boosting (5x weight)
+          
             if term in cls.TECHNICAL_SKILLS:
-                scores[term] += 5.0
+                scores[term] += 1.0
                 
-        # Sorted by weighted score
+    
         sorted_skills = sorted(scores.items(), key=lambda x: x[1], reverse=True)
         return [word for word, score in sorted_skills[:top_n]]
 
@@ -115,8 +115,12 @@ class SentimentAnalyzer:
         'excellent': 3.0, 'outstanding': 3.0, 'awesome': 2.5, 'great': 2.0, 'good': 1.5,
         'happy': 2.0, 'love': 2.5, 'success': 2.5, 'proud': 2.5, 'achieved': 2.0,
         'growth': 1.5, 'innovative': 2.0, 'breakthrough': 2.5, 'collaboration': 1.5,
+        'amazing': 2.5, 'fantastic': 2.5, 'superb': 3.0, 'brilliant': 3.0, 'perfect': 3.0,
+        'win': 2.0, 'winning': 2.0, 'leader': 1.5, 'leading': 1.5, 'improved': 1.5,
         'bad': -1.5, 'poor': -2.0, 'terrible': -3.0, 'failed': -2.5, 'worst': -3.0,
-        'issue': -1.0, 'problem': -1.5, 'bug': -1.0, 'stagnant': -1.5, 'frustrating': -2.0
+        'issue': -1.0, 'problem': -1.5, 'bug': -1.0, 'stagnant': -1.5, 'frustrating': -2.0,
+        'error': -1.5, 'crash': -2.0, 'broken': -2.0, 'disaster': -3.0, 'horrible': -2.5,
+        'difficult': -1.0, 'hard': -0.5, 'struggle': -1.5, 'struggling': -1.5
     }
     
     NEGATORS = set(['not', "isn't", "aren't", "wasn't", 'never', 'hardly', 'lack'])
@@ -244,7 +248,7 @@ class ZocialIntelligenceEngine:
     """Core Algorithm Engine driving the Zocial Platform"""
     
     def __init__(self, data: AnalyticsPayload):
-        # We can now confidently use dot notation because Pydantic guarantees the structure!
+       
         self.posts = sorted(data.posts, key=lambda x: x.createdAt)
         self.user = data.user
         self.results = {
@@ -273,13 +277,11 @@ class ZocialIntelligenceEngine:
             comments = len(post.comments)
             total_eng = likes + (comments * 2) 
 
-            
             engagements.append(total_eng)
-            
-            # 1. Advanced Sentiment Analysis
+          
             raw_sentiment = SentimentAnalyzer.analyze(caption)
             
-            # Map from [-1, 1] to [0, 100] for UI
+          
             ui_sentiment = round((raw_sentiment + 1) * 50, 1)
             
             self.results["sentiment_trend"].append({
@@ -288,27 +290,19 @@ class ZocialIntelligenceEngine:
                 "engagement": total_eng
             })
             
-            # 2. Topic/Skill Extraction Mapping
+          
             topics = TextProcessor.extract_keywords(caption)
             global_topics.update(topics)
 
-        # 3. Topic Graph Processing 
-        # HYBRID LOGIC: Use Gemini if enabled, otherwise our rule-based lexicon
+       
+        self.results["skill_graph"] = dict(global_topics.most_common(6))
+        
+      
         if self.gemini.enabled:
-            semantic_skills = self.gemini.extract_semantic_skills(all_text)
-            if semantic_skills:
-                # We overwrite the graph with semantic intelligence
-                self.results["skill_graph"] = {skill: 100 for skill in semantic_skills}
-                self.results["ai_summary"] = self.gemini.generate_career_summary(all_text, self.user.username)
-                
-                # FALLBACK check if summarizer failed
-                if not self.results["ai_summary"]:
-                     self.results["ai_summary"] = "AI Career Summary processed (Rule-based). Connect GEMINI_API_KEY for deeper semantic analysis."
-            else:
-                self.results["skill_graph"] = dict(global_topics.most_common(6))
-                self.results["ai_summary"] = "Generating rules-based summary... (Gemini API 404 Fallback)"
+            self.results["ai_summary"] = self.gemini.generate_career_summary(all_text, self.user.username)
+            if not self.results["ai_summary"]:
+                 self.results["ai_summary"] = "AI Career Summary processed (Rule-based). Connect GEMINI_API_KEY for deeper semantic analysis."
         else:
-            self.results["skill_graph"] = dict(global_topics.most_common(6))
             self.results["ai_summary"] = "Real-AI summary unavailable. Please add GEMINI_API_KEY to .env for semantic insights."
 
         

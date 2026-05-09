@@ -21,8 +21,8 @@ const NotificationPopover = ({ likeNotification = [], children }) => {
     }
   };
 
-  // Filter out all non-post-engagement notifications from the bell (Only like and comment)
-  const filteredNotifications = likeNotification.filter(n => ['like', 'comment'].includes(n.type));
+  // Filter out non-bell notifications (Keep likes, comments, and connection acceptances)
+  const filteredNotifications = likeNotification.filter(n => ['like', 'comment', 'connectionAccepted'].includes(n.type));
 
   return (
     <Popover
